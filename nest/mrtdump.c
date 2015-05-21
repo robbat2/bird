@@ -7,9 +7,6 @@
  */
 
 #include "nest/mrtdump.h"
-//#include "nest/rt-attr.c"	/* REMOVE ME */
-//#include "nest/a-path.c"	/* REMOVE ME */
-//#include "proto/bgp/attrs.c"	/* REMOVE ME */
 
 void
 mrt_msg_init(struct mrt_msg *msg, pool *mem_pool)
@@ -49,6 +46,9 @@ mrt_grow_msg_buffer(struct mrt_msg * msg, size_t min_required_capacity)
 static void
 mrt_write_to_msg(struct mrt_msg * msg, const void *data, size_t data_size)
 {
+  if (data_size == 0)
+    return;
+
   u32 i;
   for (i = 0; i < data_size; i++)
     debug("%02X ", ((byte*)data)[i]);
@@ -145,31 +145,14 @@ mrt_rib_table_inc_entry_count(struct mrt_rib_table *rt_msg)
 }
 
 void
-mrt_rib_table_add_entry(struct mrt_rib_table *rt_msg, const struct mrt_rib_entry *rib, ea_list *attrs)
+mrt_rib_table_add_entry(struct mrt_rib_table *rt_msg, const struct mrt_rib_entry *rib)
 {
   struct mrt_msg *msg = rt_msg->msg;
 
-  u16 bgp_attribute_length = 0;
-
   mrt_write_to_msg_(msg, rib->peer_index);
   mrt_write_to_msg_(msg, rib->originated_time);
-
-  byte *bgp_attribute_length_pointer = &msg->msg[msg->msg_length];
-
-  /* Fake writing. The BGP Attributes length will be overwriting later. */
-  mrt_write_to_msg_(msg, bgp_attribute_length);
-
-  /* Write BGP Attributes to the msg->msg */
-//  do
-//  {
-//    bgp_attribute_length = bgp_encode_attrs(rt_msg->bgp_proto, &msg->msg[msg->msg_length], attrs, msg->msg_capacity - msg->msg_length);
-//    if (bgp_attribute_length == ((uint)-1))
-//      mrt_grow_msg_buffer(msg, msg->msg_capacity+1);
-//  } while(bgp_attribute_length == ((uint)-1));
-//  msg->msg_length += bgp_attribute_length;
-
-  /* Put the right BGP Attributes length number at its place */
-  put_u16(bgp_attribute_length_pointer, bgp_attribute_length);
+  mrt_write_to_msg_(msg, rib->attributes_length);
+  mrt_write_to_msg(msg, rib->attributes, rib->attributes_length);
 
   mrt_rib_table_inc_entry_count(rt_msg);
   debug("\n");

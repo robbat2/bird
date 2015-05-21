@@ -84,15 +84,16 @@ t_rib_table(void)
   mrt_rib_table_init(&rt_msg, sequence_number, prefix_len, &prefix);
 
   u32 i;
+
   for(i = 0; i < 50; i++)
   {
     struct mrt_rib_entry entry = {
 	.peer_index =      i,
 	.originated_time = i | 0x08080808,
-	.attributes_length = 0,
-	.attributes = NULL,
+	.attributes_length = 7,
+	.attributes = "abcdefg",
     };
-    mrt_rib_table_add_entry(&rt_msg, &entry, NULL);
+    mrt_rib_table_add_entry(&rt_msg, &entry);
   }
 
   show_mrt_msg(&msg);

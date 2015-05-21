@@ -10,7 +10,6 @@
 #define _MRTDUMP_H_
 
 #include "nest/protocol.h"
-#include "proto/bgp/bgp.h"	/* ea_list */
 
 /* MRTDump values */
 #define MRTDUMP_HDR_LENGTH	12
@@ -83,7 +82,7 @@ void mrt_msg_free(struct mrt_msg *msg);
 void mrt_peer_index_table_init(struct mrt_peer_index_table *pit_msg, u32 collector_bgp_id, const char *name);
 void mrt_peer_index_table_add_peer(struct mrt_peer_index_table *pit_msg, u32 peer_bgp_id, ip_addr *peer_ip_addr, u32 peer_as);
 void mrt_rib_table_init(struct mrt_rib_table *rt_msg, u32 sequence_number, u8 prefix_length, ip_addr *prefix);
-void mrt_rib_table_add_entry(struct mrt_rib_table *rt_msg, const struct mrt_rib_entry *rib, ea_list *attrs);
+void mrt_rib_table_add_entry(struct mrt_rib_table *rt_msg, const struct mrt_rib_entry *rib);
 
 /* implemented in sysdep */
 void mrt_dump_message(struct proto *p, u16 type, u16 subtype, byte *buf, u32 len);
