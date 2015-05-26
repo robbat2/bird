@@ -9,7 +9,7 @@
 #include "nest/mrtdump.h"
 
 void
-mrt_msg_init(struct mrt_msg *msg, pool *mem_pool)
+mrt_msg_init(struct mrt_buffer *msg, pool *mem_pool)
 {
   msg->mem_pool = mem_pool;
   msg->msg_capacity = MRT_MSG_DEFAULT_CAPACITY;
@@ -18,33 +18,23 @@ mrt_msg_init(struct mrt_msg *msg, pool *mem_pool)
 }
 
 void
-mrt_msg_free(struct mrt_msg *msg)
+mrt_msg_free(struct mrt_buffer *msg)
 {
   mb_free(msg->msg);
 }
 
-static byte *
-mrt_peer_index_table_get_peer_count(struct mrt_peer_index_table *pit_msg)
-{
-  struct mrt_msg * msg = pit_msg->msg;
-  uint collector_bgp_id_size = 4;
-  uint name_length_size = 2;
-  uint name_size = pit_msg->name_length;
-  uint peer_count_offset = collector_bgp_id_size + name_length_size + name_size;
-  return &(msg->msg[peer_count_offset]);
-}
-
 static void
-mrt_grow_msg_buffer(struct mrt_msg * msg, size_t min_required_capacity)
+mrt_grow_msg_buffer(struct mrt_buffer * msg, size_t min_required_capacity)
 {
   msg->msg_capacity *= 2;
   if (min_required_capacity > msg->msg_capacity)
     msg->msg_capacity = min_required_capacity;
   msg->msg = mb_realloc(msg->msg, msg->msg_capacity);
+  debug("Grow buffer up to the %d Bytes. \n", msg->msg_capacity);
 }
 
 static void
-mrt_write_to_msg(struct mrt_msg * msg, const void *data, size_t data_size)
+mrt_write_to_msg(struct mrt_buffer * msg, const void *data, size_t data_size)
 {
   if (data_size == 0)
     return;
@@ -64,31 +54,47 @@ mrt_write_to_msg(struct mrt_msg * msg, const void *data, size_t data_size)
 #define mrt_write_to_msg_(msg, data) mrt_write_to_msg(msg, &data, sizeof(data))
 
 void
-mrt_peer_index_table_init(struct mrt_peer_index_table *pit_msg, u32 collector_bgp_id, const char *name)
+mrt_peer_index_table_init(struct mrt_peer_index_table *pit, u32 collector_bgp_id, const char *name)
 {
-  struct mrt_msg * msg = pit_msg->msg;
-  pit_msg->peer_count = 0;
-  pit_msg->name_length = strlen(name);
+  struct mrt_buffer * msg = &pit->msg;
+  mrt_msg_init(msg, &root_pool);
+
+  pit->peer_count = 0;
+  if (name != NULL)
+    pit->name_length = strlen(name);
+  else
+    pit->name_length = 0;
 
   mrt_write_to_msg_(msg, collector_bgp_id);
-  mrt_write_to_msg_(msg, pit_msg->name_length);
-  mrt_write_to_msg(msg, name, pit_msg->name_length);
-  mrt_write_to_msg_(msg, pit_msg->peer_count);
+  mrt_write_to_msg_(msg, pit->name_length);
+  mrt_write_to_msg(msg, name, pit->name_length);
+  mrt_write_to_msg_(msg, pit->peer_count);
   debug("\n");
 }
 
-static void
-mrt_peer_index_table_inc_peer_count(struct mrt_peer_index_table *pit_msg)
+static byte *
+mrt_peer_index_table_get_peer_count(struct mrt_peer_index_table *pit)
 {
-  pit_msg->peer_count++;
-  byte *peer_count = mrt_peer_index_table_get_peer_count(pit_msg);
-  put_u16(peer_count, pit_msg->peer_count);
+  struct mrt_buffer * msg = &pit->msg;
+  uint collector_bgp_id_size = 4;
+  uint name_length_size = 2;
+  uint name_size = pit->name_length;
+  uint peer_count_offset = collector_bgp_id_size + name_length_size + name_size;
+  return &(msg->msg[peer_count_offset]);
+}
+
+static void
+mrt_peer_index_table_inc_peer_count(struct mrt_peer_index_table *pit)
+{
+  pit->peer_count++;
+  byte *peer_count = mrt_peer_index_table_get_peer_count(pit);
+  put_u16(peer_count, pit->peer_count);
 }
 
 void
-mrt_peer_index_table_add_peer(struct mrt_peer_index_table *pit_msg, u32 peer_bgp_id, ip_addr *peer_ip_addr, u32 peer_as)
+mrt_peer_index_table_add_peer(struct mrt_peer_index_table *pit, u32 peer_bgp_id, ip_addr *peer_ip_addr, u32 peer_as)
 {
-  struct mrt_msg * msg = pit_msg->msg;
+  struct mrt_buffer * msg = &pit->msg;
 
   u8 peer_type = PEER_TYPE_AS_32BIT;
   if (sizeof(*peer_ip_addr) > sizeof(ip4_addr))
@@ -99,14 +105,15 @@ mrt_peer_index_table_add_peer(struct mrt_peer_index_table *pit_msg, u32 peer_bgp
   mrt_write_to_msg_(msg, *peer_ip_addr);
   mrt_write_to_msg_(msg, peer_as);
 
-  mrt_peer_index_table_inc_peer_count(pit_msg);
+  mrt_peer_index_table_inc_peer_count(pit);
   debug("\n");
 }
 
 void
 mrt_rib_table_init(struct mrt_rib_table *rt_msg, u32 sequence_number, u8 prefix_length, ip_addr *prefix)
 {
-  struct mrt_msg *msg = rt_msg->msg;
+  struct mrt_buffer *msg = &rt_msg->msg;
+  mrt_msg_init(msg, &root_pool);
 
   rt_msg->entry_count = 0;
 
@@ -120,7 +127,7 @@ mrt_rib_table_init(struct mrt_rib_table *rt_msg, u32 sequence_number, u8 prefix_
 static byte *
 mrt_rib_table_get_entry_count(struct mrt_rib_table *rt_msg)
 {
-  struct mrt_msg *msg = rt_msg->msg;
+  struct mrt_buffer *msg = &rt_msg->msg;
   u32 sequence_number_size = 4;
   u32 prefix_length_size = 1;
 
@@ -147,7 +154,7 @@ mrt_rib_table_inc_entry_count(struct mrt_rib_table *rt_msg)
 void
 mrt_rib_table_add_entry(struct mrt_rib_table *rt_msg, const struct mrt_rib_entry *rib)
 {
-  struct mrt_msg *msg = rt_msg->msg;
+  struct mrt_buffer *msg = &rt_msg->msg;
 
   mrt_write_to_msg_(msg, rib->peer_index);
   mrt_write_to_msg_(msg, rib->originated_time);

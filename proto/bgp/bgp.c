@@ -77,6 +77,7 @@
 #include "lib/string.h"
 
 #include "bgp.h"
+#include "mrt.h"
 
 
 struct linpool *bgp_linpool;		/* Global temporary pool */
@@ -346,6 +347,34 @@ bgp_stop(struct bgp_proto *p, unsigned subcode)
   ev_schedule(p->event);
 }
 
+void bgp_mrt_peer_index_table(struct bgp_proto *p)
+{
+  debug("Start MRT TESTING.. \n");
+
+  struct fib_mrt_peer_index_table state;
+
+//  if (p->p.table != NULL)
+  if (config->master_rtc->table != NULL)
+  {
+    debug("Start MRT TESTING.. check 1 \n");
+//    bgp_mrt_peer_index_table_init(p, p->p.table, &state);
+    bgp_mrt_peer_index_table_init(p, config->master_rtc->table, &state);
+    bgp_mrt_peer_index_table_cont(&state);
+    bgp_mrt_peer_index_table_cont(&state);
+    bgp_mrt_peer_index_table_cont(&state);
+    bgp_mrt_peer_index_table_dump(p, &state);
+    u32 i;
+    for (i = 0; i < state.mrt_pit.msg.msg_length; i++)
+      debug(" %02X", state.mrt_pit.msg.msg[i]);
+
+    bgp_mrt_peer_index_table_free(&state);
+
+    debug("\n\nEnd MRT TESTING.. \n");
+  }
+  else
+    debug("Skip MRT TESTING: rtable == NULL \n");
+}
+
 static inline void
 bgp_conn_set_state(struct bgp_conn *conn, unsigned new_state)
 {
@@ -353,6 +382,8 @@ bgp_conn_set_state(struct bgp_conn *conn, unsigned new_state)
     mrt_dump_bgp_state_change(conn, conn->state, new_state);
 
   conn->state = new_state;
+
+  bgp_mrt_peer_index_table(conn->bgp); /* REMOVE ME */
 }
 
 void
