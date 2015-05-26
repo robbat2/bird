@@ -85,6 +85,6 @@ void mrt_rib_table_init(struct mrt_rib_table *rt_msg, u32 sequence_number, u8 pr
 void mrt_rib_table_add_entry(struct mrt_rib_table *rt_msg, const struct mrt_rib_entry *rib);
 
 /* implemented in sysdep */
-void mrt_dump_message(struct proto *p, u16 type, u16 subtype, byte *buf, u32 len);
+void mrt_dump_message(const struct proto *p, u16 type, u16 subtype, byte *buf, u32 len);
 
 #endif	/* _MRTDUMP_H_ */
