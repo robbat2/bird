@@ -398,6 +398,7 @@ bgp_create_update(struct bgp_conn *conn, byte *buf)
     {
       BGP_TRACE_RL(&rl_snd_update, D_PACKETS, "Sending UPDATE");
       bgp_mrt_peer_index_table(conn->bgp); /* REMOVE ME */
+      bgp_mrt_rib_table(conn->bgp); /* REMOVE ME */
       return w;
     }
   else
@@ -703,6 +704,7 @@ bgp_fire_tx(struct bgp_conn *conn)
       BGP_TRACE(D_PACKETS, "Sending KEEPALIVE");
       bgp_start_timer(conn->keepalive_timer, conn->keepalive_time);
       bgp_mrt_peer_index_table(conn->bgp); /* REMOVE ME */
+      bgp_mrt_rib_table(conn->bgp); /* REMOVE ME */
     }
   else if (s & (1 << PKT_OPEN))
     {

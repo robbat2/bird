@@ -349,21 +349,56 @@ bgp_stop(struct bgp_proto *p, unsigned subcode)
 }
 
 static void
-bgp_mrt_dump_msg(struct fib_mrt_peer_index_table *state)
+bgp_mrt_dump_msg(struct mrt_buffer *mrt_buffer)
 {
   debug("MSG: ");
   u32 i;
-  for (i = 0; i < state->mrt_pit.msg.msg_length; i++)
-    debug(" %02X", state->mrt_pit.msg.msg[i]);
+  for (i = 0; i < mrt_buffer->msg_length; i++)
+    debug(" %02X", mrt_buffer->msg[i]);
   debug("\n");
 }
 
 void
 bgp_mrt_peer_index_table(struct bgp_proto *p)
 {
-  debug("----------- Start MRT TESTING.. -----------------\n");
+  debug("----------- Start MRT PEER INDEX TESTING.. -----------------\n");
 
-  struct fib_mrt_peer_index_table state;
+  struct mrt_fib_peer_index_table state;
+
+  rtable * table = p->p.table;
+
+  debug("rt_dump(p->p.table): \n");
+  rt_dump(p->p.table);
+
+  if (table != NULL && table->fib.entries != 0)
+  {
+    bgp_mrt_peer_index_table_init(p, table, &state);
+    bgp_mrt_dump_msg(&state.mrt_pit.msg);
+    bgp_mrt_peer_index_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_pit.msg);
+    bgp_mrt_peer_index_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_pit.msg);
+    bgp_mrt_peer_index_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_pit.msg);
+    bgp_mrt_peer_index_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_pit.msg);
+    bgp_mrt_peer_index_table_dump(p, &state);
+    bgp_mrt_dump_msg(&state.mrt_pit.msg);
+
+    bgp_mrt_peer_index_table_free(&state);
+
+    debug("\n\n-------------- End MRT PEER INDEX TESTING.. ------------------\n");
+  }
+  else
+    debug("Skip MRT TESTING: rtable == NULL \n");
+}
+
+void
+bgp_mrt_rib_table(struct bgp_proto *p)
+{
+  debug("----------- Start MRT RIB TESTING.. -----------------\n");
+
+  struct mrt_fib_rib_table state;
 
   rtable * table = p->p.table;
 
@@ -373,27 +408,28 @@ bgp_mrt_peer_index_table(struct bgp_proto *p)
   if (table != NULL && table->fib.entries != 0)
   {
     rt_lock_table(table);
-    bgp_mrt_peer_index_table_init(p, table, &state);
-    bgp_mrt_dump_msg(&state);
-    bgp_mrt_peer_index_table_step(&state);
-    bgp_mrt_dump_msg(&state);
-    bgp_mrt_peer_index_table_step(&state);
-    bgp_mrt_dump_msg(&state);
-    bgp_mrt_peer_index_table_step(&state);
-    bgp_mrt_dump_msg(&state);
-    bgp_mrt_peer_index_table_step(&state);
-    bgp_mrt_dump_msg(&state);
-    bgp_mrt_peer_index_table_dump(p, &state);
-    bgp_mrt_dump_msg(&state);
+    bgp_mrt_rib_table_init(p, table, &state, 0x12345678);
+    bgp_mrt_dump_msg(&state.mrt_rib_table.msg);
+    bgp_mrt_rib_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_rib_table.msg);
+    bgp_mrt_rib_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_rib_table.msg);
+    bgp_mrt_rib_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_rib_table.msg);
+    bgp_mrt_rib_table_step(&state);
+    bgp_mrt_dump_msg(&state.mrt_rib_table.msg);
+    bgp_mrt_rib_table_dump(p, &state);
+    bgp_mrt_dump_msg(&state.mrt_rib_table.msg);
     rt_unlock_table(table);
 
-    bgp_mrt_peer_index_table_free(&state);
+    bgp_mrt_rib_table_free(&state);
 
-    debug("\n\n-------------- End MRT TESTING.. ------------------\n");
+    debug("\n\n-------------- End MRT RIB TESTING.. ------------------\n");
   }
   else
     debug("Skip MRT TESTING: rtable == NULL \n");
 }
+
 
 static inline void
 bgp_conn_set_state(struct bgp_conn *conn, unsigned new_state)

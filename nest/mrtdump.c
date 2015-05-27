@@ -116,6 +116,11 @@ mrt_rib_table_init(struct mrt_rib_table *rt_msg, u32 sequence_number, u8 prefix_
   mrt_msg_init(msg, &root_pool);
 
   rt_msg->entry_count = 0;
+#ifdef IPV6
+  rt_msg->type = RIB_IPV6_UNICAST;
+#else
+  rt_msg->type = RIB_IPV4_UNICAST;
+#endif
 
   mrt_write_to_msg_(msg, sequence_number);
   mrt_write_to_msg_(msg, prefix_length);

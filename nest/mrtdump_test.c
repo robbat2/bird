@@ -96,10 +96,8 @@ t_rib_table(void)
   u8 prefix_len = 24;
   ip_addr prefix;
 #ifdef IPV6
-  rt_msg.type = RIB_IPV6_UNICAST;
   ip6_pton("1234:5678::9abc:def0", &prefix);
 #else
-  rt_msg.type = RIB_IPV4_UNICAST;
   ip4_pton("12.34.56.78", &prefix);
 #endif
   mrt_rib_table_init(&rt_msg, sequence_number, prefix_len, &prefix);
