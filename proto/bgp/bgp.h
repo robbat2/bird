@@ -202,6 +202,7 @@ void bgp_refresh_begin(struct bgp_proto *p);
 void bgp_refresh_end(struct bgp_proto *p);
 void bgp_store_error(struct bgp_proto *p, struct bgp_conn *c, u8 class, u32 code);
 void bgp_stop(struct bgp_proto *p, unsigned subcode);
+void bgp_mrt_peer_index_table(struct bgp_proto *p);
 
 struct rte_source *bgp_find_source(struct bgp_proto *p, u32 path_id);
 struct rte_source *bgp_get_source(struct bgp_proto *p, u32 path_id);

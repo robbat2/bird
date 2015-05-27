@@ -70,7 +70,7 @@ void *fib_get(struct fib *, ip_addr *, int); 	/* Find or create new if nonexiste
 void *fib_route(struct fib *, ip_addr, int);	/* Longest-match routing lookup */
 void fib_delete(struct fib *, void *);	/* Remove fib entry */
 void fib_free(struct fib *);		/* Destroy the fib */
-void fib_check(struct fib *);		/* Consistency check for debugging */
+void fib_check(const struct fib *);	/* Consistency check for debugging */
 
 void fit_init(struct fib_iterator *, const struct fib *); /* Internal functions, don't call */
 struct fib_node *fit_get(const struct fib *, struct fib_iterator *);

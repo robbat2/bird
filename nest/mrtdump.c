@@ -13,8 +13,8 @@ mrt_msg_init(struct mrt_buffer *msg, pool *mem_pool)
 {
   msg->mem_pool = mem_pool;
   msg->msg_capacity = MRT_MSG_DEFAULT_CAPACITY;
-  msg->msg_length = 0;
-  msg->msg = mb_alloc(msg->mem_pool, msg->msg_capacity);
+  msg->msg_length = MRTDUMP_HDR_LENGTH;	/* Reserve for the main MRT Header */
+  msg->msg = mb_allocz(msg->mem_pool, msg->msg_capacity);
 }
 
 void
@@ -79,7 +79,7 @@ mrt_peer_index_table_get_peer_count(struct mrt_peer_index_table *pit)
   uint collector_bgp_id_size = 4;
   uint name_length_size = 2;
   uint name_size = pit->name_length;
-  uint peer_count_offset = collector_bgp_id_size + name_length_size + name_size;
+  uint peer_count_offset = MRTDUMP_HDR_LENGTH + collector_bgp_id_size + name_length_size + name_size;
   return &(msg->msg[peer_count_offset]);
 }
 
@@ -139,7 +139,7 @@ mrt_rib_table_get_entry_count(struct mrt_rib_table *rt_msg)
   else
     bug("mrt_rib_table_get_entry_count: unknown RIB type!");
 
-  u32 offset = sequence_number_size + prefix_length_size + prefix_size;
+  u32 offset = MRTDUMP_HDR_LENGTH + sequence_number_size + prefix_length_size + prefix_size;
   return &msg->msg[offset];
 }
 
